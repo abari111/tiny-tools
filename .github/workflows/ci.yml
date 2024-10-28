@@ -21,7 +21,6 @@ jobs:
 
     - name: Build the library
       run: |
-        mkdir -p build
         make
       shell: bash
 
