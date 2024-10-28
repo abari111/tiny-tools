@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        compiler: [gcc, clang]
+        exclude:
+          - os: windows-latest
+            compiler: clang  # Clang is not available on Windows by default
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Set up build tools
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      run: |
+        sudo apt-get update
+        if [ "${{ matrix.compiler }}" == "gcc" ]; then
+          sudo apt-get install -y gcc make
+        else
+          sudo apt-get install -y clang make
+        fi
+      shell: bash
+
+    - name: Set up build tools (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install make
+        if (${{ matrix.compiler }} == 'gcc') {
+          choco install mingw
+        }
+      shell: bash
+
+    - name: Configure compiler
+      run: |
+        if [ "${{ matrix.compiler }}" == "gcc" ]; then
+          export CC=gcc
+        else
+          export CC=clang
+        fi
+      shell: bash
+
+    - name: Build the library
+      run: |
+        mkdir -p build
+        make
+      shell: bash
+
+    - name: Run tests
+      run: |
+        make test
+      shell: bash
